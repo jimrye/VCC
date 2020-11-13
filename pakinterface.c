@@ -509,7 +509,7 @@ void RefreshDynamicMenu(void)
 	if ((hMenu==NULL) | (EmuState.WindowHandle != hOld))
 		hMenu=GetMenu(EmuState.WindowHandle);
 	else
-		DeleteMenu(hMenu,2,MF_BYPOSITION);
+		DeleteMenu(hMenu,3,MF_BYPOSITION);
 
 	hOld=EmuState.WindowHandle;
 	hSubMenu[SubMenuIndex]=CreatePopupMenu();

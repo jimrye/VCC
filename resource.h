@@ -1,3 +1,4 @@
+
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
 // Used by Vcc.rc
@@ -436,6 +437,8 @@
 #define IDC_BUTTON165                   1188
 #define IDC_BUTTON166                   1189
 #define IDC_BUTTON167                   1190
+#define IDC_ORG_PALETTE                 1191
+#define IDC_UPD_PALETTE                 1192
 #define ID_FILE_EXIT                    40002
 #define IDM_HELP_ABOUT                  40003
 #define ID_FILE_RUN                     40004
@@ -463,8 +466,10 @@
 #define ID_CARTRIDGE_INSERT             40026
 #define ID_FILE_LOAD                    40028
 #define ID_CARTS_EJECT                  40030
-#define ID_PASTE_TEXT					40035
-#define ID_COPY_TEXT					40036
+#define ID_COPY_TEXT                    40034
+#define ID_PASTE_TEXT                   40035
+#define ID_PASTE_BASIC                  40036
+#define ID_PASTE_BASIC_NEW              40037
 #define ID_CONFIGURE_OPTIONS            65535
 
 // Next default values for new objects

@@ -286,12 +286,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					EmuState.ResetPending=2;
 					SetClockSpeed(1); //Default clock speed .89 MHZ	
 					break;
+
+				case ID_COPY_TEXT:
+					CopyText();
+					break;
+
 				case ID_PASTE_TEXT:
 					PasteText();
 					break;
-				case ID_COPY_TEXT:
-					CopyText();
-				default:
+
+				case ID_PASTE_BASIC:
+					PasteBASIC();
+					break;
+
+				case ID_PASTE_BASIC_NEW:
+					PasteBASICWithNew();
+					break;
+
+        default:
 				   return DefWindowProc(hWnd, message, wParam, lParam);
 			}
 			break;
