@@ -39,12 +39,14 @@ This file is part of VCC (Virtual Color Computer).
 #include "DirectDrawInterface.h"
 #include "joystickinput.h"
 #include "keyboard.h"
+#include "keyboardEdit.h"
 #include "fileops.h"
 #include "Cassette.h"
 #include "shlobj.h"
 #include "CommandLine.h"
-//#include "logger.h"
+#include "logger.h"
 #include <assert.h>
+
 using namespace std;
 //
 // forward declarations
@@ -57,7 +59,6 @@ void RefreshJoystickStatus(void);
 
 #define MAXCARDS 12
 LRESULT CALLBACK CpuConfig(HWND, UINT, WPARAM, LPARAM);
-
 LRESULT CALLBACK AudioConfig(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK MiscConfig(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK DisplayConfig(HWND, UINT, WPARAM, LPARAM);
@@ -80,6 +81,7 @@ static HICON CpuIcons[2],MonIcons[2],JoystickIcons[4];
 static unsigned char temp=0,temp2=0;
 static char IniFileName[]="Vcc.ini";
 static char IniFilePath[MAX_PATH]="";
+static char KeyMapFilePath[MAX_PATH]="";
 static char TapeFileName[MAX_PATH]="";
 static char ExecDirectory[MAX_PATH]="";
 static char SerialCaptureFile[MAX_PATH]="";
@@ -237,7 +239,7 @@ unsigned char WriteIniFile(void)
 	WritePrivateProfileInt("Video","MonitorType",CurrentConfig.MonitorType,IniFilePath);
 	WritePrivateProfileInt("Video","PaletteType",CurrentConfig.PaletteType, IniFilePath);
 	WritePrivateProfileInt("Video","ScanLines",CurrentConfig.ScanLines,IniFilePath);
-	WritePrivateProfileInt("Video","AllowResize",CurrentConfig.Resize,IniFilePath);
+	//WritePrivateProfileInt("Video","AllowResize",CurrentConfig.Resize,IniFilePath);
 	WritePrivateProfileInt("Video","ForceAspect",CurrentConfig.Aspect,IniFilePath);
 	WritePrivateProfileInt("Video","RememberSize", CurrentConfig.RememberSize, IniFilePath);
 	WritePrivateProfileInt("Video", "WindowSizeX", tp.x, IniFilePath);
@@ -288,7 +290,7 @@ unsigned char ReadIniFile(void)
 	CurrentConfig.FrameSkip = GetPrivateProfileInt("CPU","FrameSkip",1,IniFilePath);
 	CurrentConfig.SpeedThrottle = GetPrivateProfileInt("CPU","Throttle",1,IniFilePath);
 	CurrentConfig.CpuType = GetPrivateProfileInt("CPU","CpuType",0,IniFilePath);
-	CurrentConfig.MaxOverclock = GetPrivateProfileInt("CPU", "MaxOverClock",227, IniFilePath);
+	CurrentConfig.MaxOverclock = GetPrivateProfileInt("CPU", "MaxOverClock",100, IniFilePath);
 
 	CurrentConfig.AudioRate = GetPrivateProfileInt("Audio","Rate",3,IniFilePath);
 	GetPrivateProfileString("Audio","SndCard","",CurrentConfig.SoundCardName,63,IniFilePath);
@@ -297,9 +299,9 @@ unsigned char ReadIniFile(void)
 	CurrentConfig.PaletteType = GetPrivateProfileInt("Video", "PaletteType",1,IniFilePath);
 	CurrentConfig.ScanLines = GetPrivateProfileInt("Video","ScanLines",0,IniFilePath);
 
-	CurrentConfig.Resize = GetPrivateProfileInt("Video","AllowResize",0,IniFilePath);	
-	CurrentConfig.Aspect = GetPrivateProfileInt("Video","ForceAspect",0,IniFilePath);
-	CurrentConfig.RememberSize = GetPrivateProfileInt("Video","RememberSize",0,IniFilePath);
+	//CurrentConfig.Resize = GetPrivateProfileInt("Video","AllowResize",0,IniFilePath);	
+	CurrentConfig.Aspect = GetPrivateProfileInt("Video","ForceAspect",1,IniFilePath);
+	CurrentConfig.RememberSize = GetPrivateProfileInt("Video","RememberSize",1,IniFilePath);
 	CurrentConfig.WindowSizeX= GetPrivateProfileInt("Video", "WindowSizeX", 640, IniFilePath);
 	CurrentConfig.WindowSizeY = GetPrivateProfileInt("Video", "WindowSizeY", 480, IniFilePath);
 	CurrentConfig.AutoStart = GetPrivateProfileInt("Misc","AutoStart",1,IniFilePath);
@@ -314,6 +316,8 @@ unsigned char ReadIniFile(void)
 	CurrentConfig.KeyMap = GetPrivateProfileInt("Misc","KeyMapIndex",0,IniFilePath);
 	if (CurrentConfig.KeyMap>3)
 		CurrentConfig.KeyMap=0;	//Default to DECB Mapping
+
+	if (CurrentConfig.KeyMap == kKBLayoutCustom) LoadCustomKeyMap(GetKeyMapFilePath());
 	vccKeyboardBuildRuntimeTable((keyboardlayout_e)CurrentConfig.KeyMap);
 
 	CheckPath(CurrentConfig.ModulePath);
@@ -341,6 +345,15 @@ unsigned char ReadIniFile(void)
 	GetPrivateProfileString("DefaultPaths", "CassPath", "", CurrentConfig.CassPath, MAX_PATH, IniFilePath);
 	GetPrivateProfileString("DefaultPaths", "FloppyPath", "", CurrentConfig.FloppyPath, MAX_PATH, IniFilePath);
 	GetPrivateProfileString("DefaultPaths", "COCO3ROMPath", "", CurrentConfig.COCO3ROMPath, MAX_PATH, IniFilePath);
+
+//  Establish custom keymap file path
+	GetPrivateProfileString("Misc","CustomKeyMapFile","",KeyMapFilePath,MAX_PATH,IniFilePath);
+	if (*KeyMapFilePath == '\0') {
+	    strcpy(KeyMapFilePath, AppDataPath);
+		strcat(KeyMapFilePath, "\\");
+		strcat(KeyMapFilePath, "custom.keymap");
+	}
+
 
 	for (Index = 0; Index < NumberOfSoundCards; Index++)
 	{
@@ -437,6 +450,7 @@ LRESULT CALLBACK Config(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 				
 				CurrentConfig=TempConfig;
 
+				if (CurrentConfig.KeyMap == kKBLayoutCustom) LoadCustomKeyMap(GetKeyMapFilePath());
 				vccKeyboardBuildRuntimeTable((keyboardlayout_e)CurrentConfig.KeyMap);
 
 				Right=TempRight;
@@ -464,6 +478,7 @@ LRESULT CALLBACK Config(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 				CurrentConfig=TempConfig;
 
+	            if (CurrentConfig.KeyMap == kKBLayoutCustom) LoadCustomKeyMap(GetKeyMapFilePath());
 				vccKeyboardBuildRuntimeTable((keyboardlayout_e)CurrentConfig.KeyMap);
 
 				Right=TempRight;
@@ -496,19 +511,28 @@ void GetIniFilePath( char *Path)
 	return;
 }
 
-//<EJJ>
 void SetIniFilePath( char *Path)
 {
     //  Path must be to an existing ini file
     strcpy(IniFilePath,Path);
 }
 
+// The following two functions only work after LoadConfig has been called
 char * AppDirectory() 
 {
-    // This only works after LoadConfig has been called
 	return AppDataPath;
 }
-//<EJJ/>
+
+char * GetKeyMapFilePath()
+{
+	return KeyMapFilePath;
+}
+
+void SetKeyMapFilePath(char *Path)
+{
+    strcpy(KeyMapFilePath,Path);
+	WritePrivateProfileString("Misc","CustomKeyMapFile",KeyMapFilePath,IniFilePath);
+}
 
 void UpdateConfig (void)
 {
@@ -669,8 +693,6 @@ LRESULT CALLBACK TapeConfig(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 	ModeText.dwMask = CFM_BOLD | CFM_COLOR ;
 	ModeText.dwEffects = CFE_BOLD;
 	ModeText.crTextColor=RGB(255,0,0);
-
-
 
 	switch (message)
 	{
@@ -881,25 +903,35 @@ LRESULT CALLBACK DisplayConfig(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 LRESULT CALLBACK InputConfig(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	switch (message)
-	{
-		case WM_INITDIALOG:
-			// copy keyboard layout names to the pull-down menu
-			for (int x = 0; x <kKBLayoutCount; x++)
-			{
-				SendDlgItemMessage(hDlg,IDC_KBCONFIG,CB_ADDSTRING,(WPARAM)0,(LPARAM)k_keyboardLayoutNames[x]);
-			}
-			// select the current layout
-			SendDlgItemMessage(hDlg,IDC_KBCONFIG,CB_SETCURSEL,(WPARAM)CurrentConfig.KeyMap,(LPARAM)0);
-		break;
+    switch (message)
+    {
+    case WM_INITDIALOG:
+        // copy keyboard layout names to the pull-down menu
+        for (int x = 0; x <kKBLayoutCount; x++) {
+            SendDlgItemMessage(hDlg,IDC_KBCONFIG,CB_ADDSTRING,
+            (WPARAM)0,(LPARAM)k_keyboardLayoutNames[x]);
+        }
+        // select the current layout
+        SendDlgItemMessage(hDlg,IDC_KBCONFIG,CB_SETCURSEL,
+                            (WPARAM)CurrentConfig.KeyMap,(LPARAM)0);
+        break;
 
-		case WM_COMMAND:
-			TempConfig.KeyMap = (unsigned char)SendDlgItemMessage(hDlg,IDC_KBCONFIG,CB_GETCURSEL,0,0);
-		break;
-
-	}
-
-	return(0);
+    case WM_COMMAND:
+        TempConfig.KeyMap = (unsigned char)
+        SendDlgItemMessage(hDlg,IDC_KBCONFIG,CB_GETCURSEL,0,0);
+        if (LOWORD(wParam)==IDC_KEYMAPED) {
+            // Notify user if custom keyboard if not selected but allow edit anyway.
+            if (CurrentConfig.KeyMap != 3) {
+                MessageBox(0, "The custom keyboard map is not currently applied. For edits "
+                               "to take effect select Custom mapping AND Apply when done.",
+                               "Notice", 0);
+            }
+            DialogBox( EmuState.WindowInstance, (LPCTSTR) IDD_KEYMAPEDIT, hDlg,
+                       (DLGPROC) KeyMapProc );
+        }
+        break;
+    }
+    return(0);
 }
 
 LRESULT CALLBACK JoyStickConfig(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
@@ -1261,8 +1293,6 @@ int SelectFile(char *FileName)
 	}
 	strcpy(FileName,TempFileName);
 	
-	
-	
 	return(1);
 }
 
@@ -1287,7 +1317,6 @@ int GetRememberSize() {
 
 POINT GetIniWindowSize() {
 	POINT out;
-	
 	out.x = CurrentConfig.WindowSizeX;
 	out.y = CurrentConfig.WindowSizeY;
 	return(out);

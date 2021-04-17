@@ -15,6 +15,8 @@
 
 	You should have received a copy of the GNU General Public License
 	along with VCC (Virtual Color Computer).  If not, see <http://www.gnu.org/licenses/>.
+*
+
 */
 /*****************************************************************************/
 /*
@@ -22,6 +24,20 @@
 
 	key translation tables used to convert keyboard oem scan codes / key 
 	combinations into CoCo keyboard row/col values
+
+*//*
+    The row values are bitmasks (1,2,4,8,16,32,64)
+    The column is a digit (0-7) as follows:
+           0     1      2      3     4     5     6     7
+          ---   ---   -----   ---   ---   ---   ---  -----
+     1:    @     A      B      C     D     E     F     G
+     2:    H     I      J      K     L     M     N     O
+     4:    P     Q      R      S     T     U     V     W
+     8:    X     Y      Z      UP   DWN   LFT   RGT  SPACE
+    16:    0     1!     2"     3#    4$    5%    6&    7'
+    32:   8(     9)     :*     ;+    ,<    -=    .>    /?
+    64:   ENT   CLR  BRK/ESC  ALT    CTL   F1    F2  SHIFT
+*//*
 
 	ScanCode1 and ScanCode2 are used to determine what actual
 	key presses are translated into a specific CoCo key
@@ -46,8 +62,6 @@
 	| [Cntl][Win][Alt][        Space       ][Alt][Win][Prp][Cntl]   [LftA][DnA][RgtA] |
 	+---------------------------------------------------------------------------------+
 
-
-	TODO: explain and add link or reference to CoCo 'scan codes' for each key
 */
 /*****************************************************************************/
 
@@ -196,10 +210,10 @@ keytranslationentry_t keyTranslationsCoCo[] =
 	VCC OS-9 Keyboard
 
 	+---------------------------------------------------------------------------------+
-	| [Esc][F1][F2][  ][  ][Rst][RGB][  ][Thr][Pwr][StB][FSc][  ]  [    ][   ][    ]  |
+	| [BRK][F1][F2][  ][  ][Rst][RGB][  ][Thr][Pwr][StB][FSc][BRK] [    ][   ][    ]  |
 	|                                                                                 |
-	| [`][1!][2@][3#][4$][5%][6^][7&][8*][9(][0]][-_][=+][BkSpc]   [INST][Clr][PgUp]  |
-	| [    ][Qq][Ww][Ee][Rr][Tt][Yy][Uu][Ii][Oo][Pp][[{][]}][\|]   [DEL ][EOL][PgDn]  |
+	| [`][1!][2@][3#][4$][5%][6^][7&][8*][9(][0]][-_][=+][BkSpc]   [INST][Clr][PgUp]  |		INST=<CNTRL><R-ARROW>	Home=<CLEAR>		PgUp=<SHFT><U-ARROW>
+	| [    ][Qq][Ww][Ee][Rr][Tt][Yy][Uu][Ii][Oo][Pp][[{][]}][\|]   [DEL ][EOL][PgDn]  |		DEL=<CNTRL><L-ARROW>	END=<SHFT><R-ARROW>	PgDn=<SHFT><D-ARROW>
 	| [ Caps][Aa][Ss][Dd][Ff][Gg][Hh][Jj][Kk][Ll][;:]['"][Enter]                      |
 	| [ Shift ][Zz][Xx][Cc][Vv][Bb][Nn][Mm][,<][.>][/?][ Shift ]         [UpA]        |
 	| [Cntl][   ][Alt][       Space       ][Alt][   ][   ][Cntl]   [LftA][DnA][RgtA]  |
@@ -285,6 +299,7 @@ keytranslationentry_t keyTranslationsNatural[] =
 	{ DIK_RETURN,     0,             64,     0,     0,    0 }, //   ENTER
 	{ DIK_NUMPAD7,    0,             64,     1,     0,    0 }, //   HOME (CLEAR)
 	{ DIK_ESCAPE,     0,             64,     2,     0,    0 }, //   ESCAPE (BREAK)
+	{ DIK_F12,        0,             64,     2,     0,    0 }, //   Alternate ESCAPE (BREAK) (fixes <CNTRL><BRK> sequence)
 	{ DIK_NUMPAD1,    0,             64,     7,     8,    6 }, //   END OF LINE (SHIFT)(RIGHT)
 	{ DIK_NUMPADPERIOD, 0,           64,     4,     8,    5 }, //   DELETE (CTRL)(LEFT)
 	{ DIK_NUMPAD0,    0,             64,     4,     8,    6 }, //   INSERT (CTRL)(RIGHT)
@@ -480,7 +495,7 @@ VCC Custom Keyboard
 | [Cntl][   ][Alt][       Space       ][Alt][   ][   ][Cntl]   [LftA][DnA][RgtA]  |
 +---------------------------------------------------------------------------------+
 */
-keytranslationentry_t keyTranslationsCustom[] =
+keytranslationentry_t keyTranslationsCustom[MAX_CTRANSTBLSIZ] =
 {
 	// ScanCode1,     ScanCode2,      Row1,  Col1,  Row2, Col2    Char  
 	{ DIK_A,          0,              1,     1,     0,    0 }, //   A
