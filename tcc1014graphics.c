@@ -8203,7 +8203,7 @@ case 192+2:	//Bpp=0 Sr=2
 	{
 		WidePixel=WideBuffer[(VidMask & ( Start+(unsigned char)(Hoffset+HorzBeam) ))>>1];
 //************************************************************************************
-		if (!MonType && BoarderColor32 == 0xFFFFFF)
+		if (!MonType && (BoarderColor32 == 0xFFFFFF || BoarderColor32 == 0x00FF00))
 		{ //Pcolor
 			for (Bit=7;Bit>=0;Bit--)
 			{
@@ -9811,6 +9811,7 @@ void MakeRGBPalette (void)
 {
 	unsigned char Index=0;
 	unsigned char r,g,b;
+	OutputDebugString("Loading RGB Palette.\n");
 	for (Index=0;Index<64;Index++)
 	{
 
@@ -9835,16 +9836,43 @@ void MakeRGBPalette (void)
 
 void MakeCMPpalette(void)	
 {
+	//static unsigned short Afacts16[2][4] = { 0,0xF800,0x001F,0xFFFF,0,0x001F,0xF800,0xFFFF };
+	
+	//static unsigned char Afacts8[2][4] = { 0,0xA4,0x89,0xBF,0,137,164,191 };
+	                                            // Blue, Orange,  White, Black Orange,    Blue,    White
+	//static unsigned int Afacts32[2][4] = { 0,0xFF8D1F,0x0667FF,0xFFFFFF,0,0x0667FF,0xFF8D1F,0xFFFFFF };
+	// 255, 141, 31 (142)    6, 103, 255 (121)    255, 255, 255 (255) (0)   6, 103, 255 (121)     255, 141, 31  (142)   255, 255, 255 
+	
 	double saturation, brightness, contrast;
 	int offset;
 	double w;
 	double r,g,b;
-	
-	int PaletteType = GetPaletteType();
+	unsigned int tmpPalette[2][4];
 
+	int PaletteType = GetPaletteType();
 	unsigned char rr,gg,bb;
 	unsigned char Index=0;
+	OutputDebugString("Loading CMP Palette.\n");
+	if (PaletteType <= 1) {
+		OutputDebugString("Palette 0 or 1\n");
+		unsigned int tmpPalette[2][4] = { 0,0xFF8D1F,0x0667FF,0xFFFFFF,0,0x0667FF,0xFF8D1F,0xFFFFFF };
+		memcpy(Afacts32, tmpPalette, sizeof(tmpPalette));
+	}
+	if (PaletteType == 2) {
+		OutputDebugString("Palette 2\n");
+		unsigned int tmpPalette[2][4] = { 0,0x8E8E8E,0x797979,0xFFFFFF,0,0x797979,0x8E8E8E,0xFFFFFF };
+		memcpy(Afacts32, tmpPalette, sizeof(tmpPalette));
+		//Afacts32[0][0] = 0x000000; Afacts32[0][1] = 0x8E8E8E; Afacts32[0][2] = 0x797979; Afacts32[0][3] = 0xFFFFFF; 
+		//Afacts32[1][0] = 0x000000; Afacts32[1][1] = 0x797979; Afacts32[1][2] = 0x8E8E8E; Afacts32[1][3] = 0xFFFFFF;
+	}
+	if (PaletteType == 3) {
+		OutputDebugString("Palette 3\n");
+		unsigned int tmpPalette[2][4] = { 0,0x008E00,0x007900,0x00FF00,0,0x007900,0x008E00,0x00FF00 };
+		memcpy(Afacts32, tmpPalette, sizeof(tmpPalette));
 
+		//Afacts32[0][0] = 0x000000; Afacts32[0][1] = 0x008E00; Afacts32[0][2] = 0x007900; Afacts32[0][3] = 0x00FF00;
+		//Afacts32[1][0] = 0x000000; Afacts32[1][1] = 0x007900; Afacts32[1][2] = 0x008E00; Afacts32[1][3] = 0x00FF00;
+	}
 	
 	int red[] = { 
 		0,14,12,21,51,86,108,118,
@@ -9878,22 +9906,40 @@ void MakeCMPpalette(void)
 	};
 
 	float gamma = 1.4F;
-	if (PaletteType == 1) { OutputDebugString("Loading new CMP palette.\n"); }
-	else { OutputDebugString("Loading old CMP palette.\n"); }
+
 	for (Index = 0; Index <= 63; Index++)
 	{
+		if (PaletteType == 3) {
+			// Green scale palette
+			if (Index > 39) { gamma = 1.1F; }
+			if (Index > 55) { gamma = 1.0F; }
+			//gamma = 1.0F;
+			int tmp = (red[Index] + green[Index] + blue[Index]) / 3;
+			r = 0;
+			g = tmp * gamma; if (g > 255) { g = 255; }
+			b = 0;
+		}
+		if (PaletteType == 2) {
+			// Gray scale Screen palette
+			if (Index > 39) { gamma = 1.1F; }
+			if (Index > 55) { gamma = 1.0F; }
+			//gamma = 1.0F;
+			int tmp = (red[Index] + green[Index] + blue[Index]  ) / 3;
+			r = tmp * gamma; if (r > 255) { r = 255; }
+			g = tmp * gamma; if (g > 255) { g = 255; }
+			b = tmp * gamma; if (b > 255) { b = 255; }
+
+		}
 		if (PaletteType == 1) 
 		{
 			if (Index > 39) { gamma = 1.1F; }
 			if (Index > 55) { gamma = 1.0F; }
 
-			//int tmp = 0;
-
 			r = red[Index] * gamma; if (r > 255) { r = 255; }
 			g = green[Index] * gamma; if (g > 255) { g = 255; }
 			b = blue[Index] * gamma; if (b > 255) { b = 255; }
 		}
-		else {  //Old palette //Stolen from M.E.S.S.
+		if (PaletteType == 0) {  //Old palette //Stolen from M.E.S.S.
 					switch(Index)
 					{
 						case 0:

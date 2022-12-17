@@ -75,7 +75,7 @@ static unsigned int	LeftJoyEmu[4]={IDC_LEFTSTANDARD,IDC_LEFTSHIRES,IDC_LEFTTHIRE
 static unsigned int	RightJoyEmu[4]={IDC_RIGHTSTANDARD,IDC_RIGHTSHIRES,IDC_RIGHTTHRES,IDC_RIGHTCCMAX };
 static unsigned short int	Cpuchoice[2]={IDC_6809,IDC_6309};
 static unsigned short int	Monchoice[2]={IDC_COMPOSITE,IDC_RGB};
-static unsigned short int   PaletteChoice[2] = { IDC_ORG_PALETTE,IDC_UPD_PALETTE };
+static unsigned short int   PaletteChoice[4] = { IDC_ORG_PALETTE,IDC_UPD_PALETTE,IDC_BW_PALETTE,IDC_GR_PALETTE };
 static HICON CpuIcons[2],MonIcons[2],JoystickIcons[4];
 static unsigned char temp=0,temp2=0;
 static char IniFileName[]="Vcc.ini";
@@ -818,12 +818,15 @@ LRESULT CALLBACK DisplayConfig(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				isRGB = TRUE;
 				SendDlgItemMessage(hDlg, IDC_ORG_PALETTE, BM_SETSTATE, 1, 0);
 				SendDlgItemMessage(hDlg, IDC_UPD_PALETTE, BM_SETSTATE, 1, 0);
+				SendDlgItemMessage(hDlg, IDC_BW_PALETTE, BM_SETSTATE, 1, 0);
+				SendDlgItemMessage(hDlg, IDC_GR_PALETTE, BM_SETSTATE, 1, 0);
 				SendDlgItemMessage(hDlg, IDC_ORG_PALETTE, BM_SETDONTCLICK, 1, 0);
 				SendDlgItemMessage(hDlg, IDC_UPD_PALETTE, BM_SETDONTCLICK, 1, 0);
-
+				SendDlgItemMessage(hDlg, IDC_BW_PALETTE, BM_SETDONTCLICK, 1, 0);
+				SendDlgItemMessage(hDlg, IDC_GR_PALETTE, BM_SETDONTCLICK, 1, 0);
 			}
 			SendDlgItemMessage(hDlg,IDC_MONTYPE,STM_SETIMAGE ,(WPARAM)IMAGE_ICON,(LPARAM)MonIcons[TempConfig.MonitorType]);
-			for (temp = 0; temp <= 1; temp++)
+			for (temp = 0; temp <= 3; temp++)
 				SendDlgItemMessage(hDlg, PaletteChoice[temp], BM_SETCHECK, (temp == TempConfig.PaletteType), 0);
 
 		break;
@@ -862,6 +865,8 @@ LRESULT CALLBACK DisplayConfig(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					SendDlgItemMessage(hDlg, IDC_MONTYPE, STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)MonIcons[TempConfig.MonitorType]);
 					SendDlgItemMessage(hDlg, IDC_ORG_PALETTE, BM_SETSTATE, 0, 0);
 					SendDlgItemMessage(hDlg, IDC_UPD_PALETTE, BM_SETSTATE, 0, 0);
+					SendDlgItemMessage(hDlg, IDC_BW_PALETTE, BM_SETSTATE, 0, 0);
+					SendDlgItemMessage(hDlg, IDC_GR_PALETTE, BM_SETSTATE, 0, 0);
 					break;
 				case IDC_RGB:
 					isRGB = TRUE;
@@ -877,28 +882,57 @@ LRESULT CALLBACK DisplayConfig(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					//If RGB is chosen, disable palette buttons.
 					SendDlgItemMessage(hDlg, IDC_ORG_PALETTE, BM_SETSTATE, 1, 0);
 					SendDlgItemMessage(hDlg, IDC_UPD_PALETTE, BM_SETSTATE, 1, 0);
+					SendDlgItemMessage(hDlg, IDC_BW_PALETTE, BM_SETSTATE, 1, 0);
+					SendDlgItemMessage(hDlg, IDC_GR_PALETTE, BM_SETSTATE, 1, 0);
 					SendDlgItemMessage(hDlg, IDC_ORG_PALETTE, BM_SETDONTCLICK, 1, 0);
 					SendDlgItemMessage(hDlg, IDC_UPD_PALETTE, BM_SETDONTCLICK, 1, 0);
+					SendDlgItemMessage(hDlg, IDC_BW_PALETTE, BM_SETSTATE, 1, 0);
+					SendDlgItemMessage(hDlg, IDC_GR_PALETTE, BM_SETSTATE, 1, 0);
 					break;
 				case IDC_ORG_PALETTE: 
 					if (!isRGB) {
 						//Original Composite palette
 						SendDlgItemMessage(hDlg, IDC_ORG_PALETTE, BM_SETCHECK, 1, 0);
 						SendDlgItemMessage(hDlg, IDC_UPD_PALETTE, BM_SETCHECK, 0, 0);
+						SendDlgItemMessage(hDlg, IDC_BW_PALETTE, BM_SETCHECK, 0, 0);
+						SendDlgItemMessage(hDlg, IDC_GR_PALETTE, BM_SETCHECK, 0, 0);
 						TempConfig.PaletteType = 0;
 					}
 					else { SendDlgItemMessage(hDlg, IDC_ORG_PALETTE, BM_SETSTATE, 1, 0); }
-					break;
+			    break;
 				case IDC_UPD_PALETTE:
 					if (!isRGB) {
 						//New Composite palette
 						SendDlgItemMessage(hDlg, IDC_UPD_PALETTE, BM_SETCHECK, 1, 0);
 						SendDlgItemMessage(hDlg, IDC_ORG_PALETTE, BM_SETCHECK, 0, 0);
+						SendDlgItemMessage(hDlg, IDC_BW_PALETTE, BM_SETCHECK, 0, 0);
+						SendDlgItemMessage(hDlg, IDC_GR_PALETTE, BM_SETCHECK, 0, 0);
 						TempConfig.PaletteType = 1;
 					}
 					else { SendDlgItemMessage(hDlg, IDC_UPD_PALETTE, BM_SETSTATE, 1, 0); }
 				break;
-
+				case IDC_BW_PALETTE:
+					if (!isRGB) {
+						//New Composite palette
+						SendDlgItemMessage(hDlg, IDC_UPD_PALETTE, BM_SETCHECK, 0, 0);
+						SendDlgItemMessage(hDlg, IDC_ORG_PALETTE, BM_SETCHECK, 0, 0);
+						SendDlgItemMessage(hDlg, IDC_BW_PALETTE, BM_SETCHECK, 1, 0);
+						SendDlgItemMessage(hDlg, IDC_GR_PALETTE, BM_SETCHECK, 0, 0);
+						TempConfig.PaletteType = 2;
+					}
+					else { SendDlgItemMessage(hDlg, IDC_BW_PALETTE, BM_SETSTATE, 1, 0); }
+					break;
+				case IDC_GR_PALETTE:
+					if (!isRGB) {
+						//New Composite palette
+						SendDlgItemMessage(hDlg, IDC_UPD_PALETTE, BM_SETCHECK, 0, 0);
+						SendDlgItemMessage(hDlg, IDC_ORG_PALETTE, BM_SETCHECK, 0, 0);
+						SendDlgItemMessage(hDlg, IDC_BW_PALETTE, BM_SETCHECK, 0, 0);
+						SendDlgItemMessage(hDlg, IDC_GR_PALETTE, BM_SETCHECK, 1, 0);
+						TempConfig.PaletteType = 3;
+					}
+					else { SendDlgItemMessage(hDlg, IDC_GR_PALETTE, BM_SETSTATE, 1, 0); }
+					break;
 			}	//End switch LOWORD(wParam)
 		break;	//break WM_COMMAND
 	}			//END switch Message
